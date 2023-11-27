@@ -1,0 +1,37 @@
+stages:
+  - validate
+  - plan
+  - apply
+image:
+  name: hashicorp/terraform:light
+  entrypoint:
+    - '/usr/bin/env'
+    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+before_script:
+  - export subscription_id=${ARM_SUBSCRIPTION_ID}
+  - export client_id=${ARM_CLIENT_ID}
+  - export client_secret=${ARM_CLIENT_SECRET}
+  - export tenant_id=${ARM_TENANT_ID}
+  - rm -rf .terraform
+  - terraform --version
+  - terraform init
+validate:
+  stage: validate
+  script:
+    - terraform validate
+plan:
+  stage: plan
+  script:
+    - terraform plan -out "planfile"
+  dependencies:
+    - validate
+  artifacts:
+    paths:
+      - planfile
+apply:
+  stage: apply
+  script:
+    - terraform apply -input=false "planfile"
+  dependencies:
+    - plan
+  when: manual
